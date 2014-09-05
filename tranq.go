@@ -1,0 +1,251 @@
+package tranq
+
+import (
+	"fmt"
+	"reflect"
+)
+
+const (
+	id = "ID"
+)
+
+// InvalidKindError ...
+type InvalidKindError struct {
+	Kind reflect.Kind
+}
+
+// Error ...
+func (i InvalidKindError) Error() string {
+	return fmt.Sprintf("an unsupported `reflect.Kind` was encoutered, was `%s`", i.Kind)
+}
+
+// UninterfaceabledValueError ...
+type UninterfaceabledValueError struct {
+	Value reflect.Value
+}
+
+// Error ...
+func (i UninterfaceabledValueError) Error() string {
+	return fmt.Sprintf("failed to call `Interface` method on `reflect.Value` of `%v`", i.Value)
+}
+
+// Dereference ...
+func Dereference(i interface{}) (reflect.Value, reflect.Kind, reflect.Type) {
+	var (
+		v reflect.Value
+		k reflect.Kind
+		t reflect.Type
+	)
+
+	v = reflect.ValueOf(i)
+	k = v.Kind()
+
+	if k == reflect.Ptr || k == reflect.Interface {
+		v = v.Elem()
+
+		if v.CanInterface() {
+			return Dereference(v.Interface())
+		}
+
+		panic(UninterfaceabledValueError{v})
+	}
+
+	t = v.Type()
+
+	return v, k, t
+}
+
+// TypeName ...
+func TypeName(i interface{}) (string, error) {
+	var (
+		o bool
+		t reflect.Type
+		k reflect.Kind
+	)
+
+	if t, o = i.(reflect.Type); !o {
+		_, k, t = Dereference(i)
+	} else {
+		k = t.Kind()
+	}
+
+	if k == reflect.Struct {
+		return t.Name(), nil
+	} else if k == reflect.Array || k == reflect.Slice || k == reflect.Ptr {
+		return TypeName(t.Elem())
+	}
+
+	return "", InvalidKindError{k}
+}
+
+func isBaseKind(kind reflect.Kind) bool {
+	switch kind {
+	case reflect.Bool:
+	case reflect.Int:
+	case reflect.Int8:
+	case reflect.Int16:
+	case reflect.Int32:
+	case reflect.Int64:
+	case reflect.Uint:
+	case reflect.Uint8:
+	case reflect.Uint16:
+	case reflect.Uint32:
+	case reflect.Uint64:
+	case reflect.Float32:
+	case reflect.Float64:
+	case reflect.Complex64:
+	case reflect.Complex128:
+	case reflect.String:
+	default:
+		return false
+	}
+
+	return true
+}
+
+func isStructKind(kind reflect.Kind) bool {
+	return kind == reflect.Struct
+}
+
+func isCollectionKind(kind reflect.Kind) bool {
+	return kind == reflect.Slice || kind == reflect.Array
+}
+
+func shouldDescend(kind reflect.Kind, currentDepth, maxDepth int) bool {
+	if isBaseKind(kind) {
+		return true
+	}
+
+	return ((isStructKind(kind) || isCollectionKind(kind)) && (currentDepth+1 <= maxDepth))
+}
+
+type compiler struct {
+	*Tranq
+}
+
+func (cr compiler) compile(i interface{}, c, m int) (interface{}, error) {
+	var v, k, t = Dereference(i)
+
+	if isBaseKind(k) {
+		if v.CanInterface() {
+			return v.Interface(), nil
+		}
+
+		return nil, UninterfaceabledValueError{v}
+	} else if isStructKind(k) {
+		return cr.compileStruct(v, t, c, m)
+	} else if isCollectionKind(k) {
+		return cr.compileCollection(v, c, m)
+	}
+
+	panic(InvalidKindError{k})
+}
+
+func (cr compiler) compileStruct(v reflect.Value, t reflect.Type, c, m int) (interface{}, error) {
+	var payload = make(Payload)
+
+	for i := 0; i < v.NumField(); i++ {
+		var (
+			fv = v.Field(i)
+			fs = t.Field(i)
+			ft = fv.Type()
+			fk = fv.Kind()
+		)
+
+		if cr.strategy.ShouldSkipStructField(fs) {
+			continue
+		} else if !fv.CanInterface() {
+			return nil, UninterfaceabledValueError{fv}
+		} else if cr.strategy.ShouldLinkStructField(fs) {
+			var result, err = cr.compile(fv.Interface(), 0, cr.strategy.GetMaxLinkDepth())
+
+			if nil != err {
+				return nil, err
+			}
+
+			var linker = Link{
+				Interface:   result,
+				Value:       fv,
+				Type:        ft,
+				Kind:        fk,
+				StructField: fs,
+				IDFormat:    cr.id,
+			}
+
+			cr.strategy.LinkStructField(payload, linker)
+		} else if shouldDescend(fk, c, m) {
+			var (
+				n           = cr.strategy.FormatAttributeName(fs.Name)
+				result, err = cr.compile(fv.Interface(), c+1, m)
+			)
+
+			if nil != err {
+				return nil, err
+			}
+
+			payload[n] = result
+		}
+	}
+
+	return payload, nil
+}
+
+func (cr compiler) compileCollection(v reflect.Value, c, m int) (interface{}, error) {
+	var collection = make([]interface{}, 0, 0)
+
+	for i := 0; i < v.Len(); i++ {
+		var e = v.Index(i)
+
+		if e.CanInterface() {
+			var result, err = cr.compile(e.Interface(), c+1, m)
+
+			if nil != err {
+				return nil, err
+			}
+
+			collection = append(collection, result)
+		} else {
+			panic(UninterfaceabledValueError{e})
+		}
+	}
+
+	return collection, nil
+}
+
+// Tranq ...
+type Tranq struct {
+	strategy Strategy
+	id       string
+}
+
+// CompilePayload ...
+func (tq *Tranq) CompilePayload(i interface{}) (Payload, error) {
+	var t, e = TypeName(i)
+
+	if nil != e {
+		return nil, e
+	}
+
+	var (
+		p = make(Payload)
+		m = tq.strategy.GetMaxMapDepth()
+		n = tq.strategy.GetTopLevelNamespace(t)
+		c = compiler{tq}
+	)
+
+	tq.strategy.SetPayloadRoot(p)
+	if p[n], e = c.compile(i, 0, m); nil != e {
+		return nil, e
+	}
+
+	return p, nil
+}
+
+// New ...
+func New(s Strategy) (t *Tranq) {
+	t = new(Tranq)
+	t.strategy = s
+	t.id = s.FormatAttributeName(id)
+
+	return
+}
