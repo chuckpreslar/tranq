@@ -5,26 +5,31 @@ import (
 	"reflect"
 )
 
-// NoIDFieldError ..
+// NoIDFieldError is an error returned when a Payload is
+// encountered that's missing an `id` attribute formatted
+// by calling the established Strategy's `FormatTypeName` method.
 type NoIDFieldError struct {
 	TypeName string
 }
 
-// Error ...
+// Error implements the `error` interface.
 func (n NoIDFieldError) Error() string {
 	return fmt.Sprintf("type with name `%s` is missing ID struct field supplied by tranq.Strategy's method FormatAttributeName(\"%s\")", n.TypeName, id)
 }
 
-// UnlinkableTypeError ...
+// UnlinkableTypeError is an error returned when an unexpected
+// type is passed to the Linker for linking.
 type UnlinkableTypeError struct {
 	Type interface{}
 }
 
+// Error implements the `error` interface.
 func (u UnlinkableTypeError) Error() string {
 	return fmt.Sprintf("tranq.Link recieved invalid type to link, expected []tranq.Payload or tranq.Payload, was `%t`", u.Type)
 }
 
-// Linker ...
+// Linker is an interface used for establishing JSON API
+// links and linked resources.
 type Linker interface {
 	GetIDMap() (interface{}, error)
 	GetStructFieldName() string
@@ -33,7 +38,7 @@ type Linker interface {
 	GetStructFieldTag(s string) string
 }
 
-// Link ...
+// Link is used to implement the Linker interface.
 type Link struct {
 	Interface   interface{}
 	Value       reflect.Value
@@ -43,12 +48,13 @@ type Link struct {
 	IDFormat    string
 }
 
-// IsCollectionLink ...
+// IsCollectionLink returns true if the reflect.Kind provided
+// for linking is a reflect.Kind of reflect.Slice or reflect.Array.
 func (l Link) IsCollectionLink() bool {
 	return isCollectionKind(l.Kind)
 }
 
-// GetIDMap ...
+// GetIDMap returns the `id`(s) of a linkable resource.
 func (l Link) GetIDMap() (interface{}, error) {
 	if l.IsCollectionLink() {
 		var (
@@ -95,17 +101,18 @@ func (l Link) getIDAttribute(i interface{}) (interface{}, error) {
 	return id, nil
 }
 
-// GetStructFieldName ...
+// GetStructFieldName returns the name of the reflect.StructField being linked.
 func (l Link) GetStructFieldName() string {
 	return l.StructField.Name
 }
 
-// GetTypeName ...
+// GetTypeName returns the name of the reflect.Type being linked or an
+// InvalidKindError.
 func (l Link) GetTypeName() (string, error) {
 	return TypeName(l.Type)
 }
 
-// GetStructFieldTag ...
+// GetStructFieldTag allows accessing of the reflect.StructField's tags.
 func (l Link) GetStructFieldTag(s string) string {
 	return l.StructField.Tag.Get(s)
 }

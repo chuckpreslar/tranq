@@ -9,27 +9,30 @@ const (
 	id = "ID"
 )
 
-// InvalidKindError ...
+// InvalidKindError is a error which is returned when an unexpected
+// reflect.Kind is encounted.
 type InvalidKindError struct {
 	Kind reflect.Kind
 }
 
-// Error ...
+// Error implements the `error` interface.
 func (i InvalidKindError) Error() string {
 	return fmt.Sprintf("an unsupported `reflect.Kind` was encoutered, was `%s`", i.Kind)
 }
 
-// UninterfaceabledValueError ...
+// UninterfaceabledValueError when a reflect.Value cannot have
+// it's `Interface` method called without panicking.
 type UninterfaceabledValueError struct {
 	Value reflect.Value
 }
 
-// Error ...
+// Error implements the `error` interface.
 func (i UninterfaceabledValueError) Error() string {
 	return fmt.Sprintf("failed to call `Interface` method on `reflect.Value` of `%v`", i.Value)
 }
 
-// Dereference ...
+// Dereference attempts to dereference the provided paramter `i`
+// from reflect.Kind's of reflect.Ptr and reflect.Interface.
 func Dereference(i interface{}) (reflect.Value, reflect.Kind, reflect.Type) {
 	var (
 		v reflect.Value
@@ -55,7 +58,9 @@ func Dereference(i interface{}) (reflect.Value, reflect.Kind, reflect.Type) {
 	return v, k, t
 }
 
-// TypeName ...
+// TypeName attempts to resolve parameter `i`'s type name,
+// returning an InvalidKindError if `i` cannot be dereferenced
+// into a reflect.Kind of reflect.Struct, reflect.Slice or reflect.Array.
 func TypeName(i interface{}) (string, error) {
 	var (
 		o bool
@@ -212,13 +217,15 @@ func (cr compiler) compileCollection(v reflect.Value, c, m int) (interface{}, er
 	return collection, nil
 }
 
-// Tranq ...
+// Tranq allows for JSON serialization based on a Strategy intended
+// to follow the JSON API standard.
 type Tranq struct {
 	strategy Strategy
 	id       string
 }
 
-// CompilePayload ...
+// CompilePayload uses the Tranq instances Strategy
+// to serialize a Payload.
 func (tq *Tranq) CompilePayload(i interface{}) (Payload, error) {
 	var t, e = TypeName(i)
 
@@ -241,7 +248,7 @@ func (tq *Tranq) CompilePayload(i interface{}) (Payload, error) {
 	return p, nil
 }
 
-// New ...
+// New returns a pointer to a Tranq struct.
 func New(s Strategy) (t *Tranq) {
 	t = new(Tranq)
 	t.strategy = s

@@ -2,7 +2,9 @@ package tranq
 
 import "reflect"
 
-// EmbeddedStrategy ...
+// EmbeddedStrategy implements the Strategy interface,
+// formatting JSON responses with a JSON API `links`
+// attribute established within each resource.
 type EmbeddedStrategy struct {
 	MaxMapDepth            int
 	MaxLinkDepth           int
@@ -13,22 +15,28 @@ type EmbeddedStrategy struct {
 	root Payload
 }
 
-// SetPayloadRoot ...
+// SetPayloadRoot sets the unexported root Payload field
 func (e *EmbeddedStrategy) SetPayloadRoot(p Payload) {
 	e.root = p
 }
 
-// GetMaxMapDepth ...
+// GetMaxMapDepth returns the MaxMapDepth integer to inform
+// the serialization compiler how far to traverse into
+// the provided object, mapping nested resources.
 func (e *EmbeddedStrategy) GetMaxMapDepth() int {
 	return e.MaxMapDepth
 }
 
-// GetMaxLinkDepth ...
+// GetMaxLinkDepth returns the MaxLinkDepth integer to inform
+// the serialization compiler how far to traverse into
+// the provided object, linking nested resources.
 func (e *EmbeddedStrategy) GetMaxLinkDepth() int {
 	return e.MaxLinkDepth
 }
 
-// GetTopLevelNamespace ...
+// GetTopLevelNamespace returns the provided top level namespace
+// for the root mapping if one is specified, otherwise it attempts
+// to format the string `s` with the method `FormatTypeName`.
 func (e *EmbeddedStrategy) GetTopLevelNamespace(s string) string {
 	if 0 < len(e.TopLevelNamespace) {
 		return e.TopLevelNamespace
@@ -37,7 +45,8 @@ func (e *EmbeddedStrategy) GetTopLevelNamespace(s string) string {
 	return e.FormatTypeName(s)
 }
 
-// FormatAttributeName ...
+// FormatAttributeName returns the result of the AttributeNameFormatter
+// if one is provided, else the original string `s` is returned.
 func (e *EmbeddedStrategy) FormatAttributeName(s string) string {
 	if nil == e.AttributeNameFormatter {
 		return s
@@ -46,7 +55,8 @@ func (e *EmbeddedStrategy) FormatAttributeName(s string) string {
 	return e.AttributeNameFormatter(s)
 }
 
-// FormatTypeName ...
+// FormatTypeName returns the result of the TypeNameFormatter
+// if one is provided, else the original string `s` is returned.
 func (e *EmbeddedStrategy) FormatTypeName(s string) string {
 	if nil == e.TypeNameFormatter {
 		return s
@@ -55,17 +65,20 @@ func (e *EmbeddedStrategy) FormatTypeName(s string) string {
 	return e.TypeNameFormatter(s)
 }
 
-// ShouldSkipStructField ...
+// ShouldSkipStructField informs the serialization compiler if a struct
+// field should be skipped over.
 func (e *EmbeddedStrategy) ShouldSkipStructField(s reflect.StructField) bool {
 	return s.Tag.Get("tranq-ignore") == "true"
 }
 
-// ShouldLinkStructField ...
+// ShouldLinkStructField informs the serialization compiler if a struct
+// field should be linked.
 func (e *EmbeddedStrategy) ShouldLinkStructField(s reflect.StructField) bool {
 	return s.Tag.Get("tranq-link") == "true"
 }
 
-// LinkStructField ...
+// LinkStructField links a resource using the Linker interface to the
+// supplied Payload.
 func (e *EmbeddedStrategy) LinkStructField(p Payload, l Linker) error {
 	var (
 		ok    bool
