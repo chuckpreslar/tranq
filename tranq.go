@@ -33,7 +33,7 @@ func (i UninterfaceabledValueError) Error() string {
 
 // Dereference attempts to dereference the provided paramter `i`
 // from reflect.Kind's of reflect.Ptr and reflect.Interface.
-func Dereference(i interface{}) (reflect.Value, reflect.Kind, reflect.Type) {
+func Dereference(i interface{}) (reflect.Value, reflect.Kind, reflect.Type, error) {
 	var (
 		v reflect.Value
 		k reflect.Kind
@@ -50,12 +50,12 @@ func Dereference(i interface{}) (reflect.Value, reflect.Kind, reflect.Type) {
 			return Dereference(v.Interface())
 		}
 
-		panic(UninterfaceabledValueError{v})
+		return reflect.Value{}, reflect.Invalid, nil, UninterfaceabledValueError{v}
 	}
 
 	t = v.Type()
 
-	return v, k, t
+	return v, k, t, nil
 }
 
 // TypeName attempts to resolve parameter `i`'s type name,
@@ -66,10 +66,14 @@ func TypeName(i interface{}) (string, error) {
 		o bool
 		t reflect.Type
 		k reflect.Kind
+		e error
 	)
 
 	if t, o = i.(reflect.Type); !o {
-		_, k, t = Dereference(i)
+		_, k, t, e = Dereference(i)
+		if nil != e {
+			return "", e
+		}
 	} else {
 		k = t.Kind()
 	}
@@ -129,7 +133,11 @@ type compiler struct {
 }
 
 func (cr compiler) compile(i interface{}, c, m int) (interface{}, error) {
-	var v, k, t = Dereference(i)
+	var v, k, t, e = Dereference(i)
+
+	if nil != e {
+		return nil, e
+	}
 
 	if isBaseKind(k) {
 		if v.CanInterface() {

@@ -76,36 +76,36 @@ func TestUninterfaceabledValueError(t *testing.T) {
 }
 
 func TestSimpleStructDereference(t *testing.T) {
-	var _, kind, _ = tranq.Dereference(TStruct{})
+	var _, kind, _, _ = tranq.Dereference(TStruct{})
 
 	assert.Equal(t, kind, reflect.Struct, "failed to result in reflect.Kind of reflect.Struct")
 }
 
 func TestPointerStructDereference(t *testing.T) {
-	var _, kind, _ = tranq.Dereference(&TStruct{})
+	var _, kind, _, _ = tranq.Dereference(&TStruct{})
 
 	assert.Equal(t, kind, reflect.Struct, "failed to result in reflect.Kind of reflect.Struct")
 }
 
 func TestComplexPointerStructDereference(t *testing.T) {
 	var (
-		tstruct    = &TStruct{}
-		_, kind, _ = tranq.Dereference(&tstruct)
+		tstruct       = &TStruct{}
+		_, kind, _, _ = tranq.Dereference(&tstruct)
 	)
 
 	assert.Equal(t, kind, reflect.Struct, "failed to result in reflect.Kind of reflect.Struct")
 }
 
 func TestSimpleCollectionDereference(t *testing.T) {
-	var _, kind, _ = tranq.Dereference([]TStruct{})
+	var _, kind, _, _ = tranq.Dereference([]TStruct{})
 
 	assert.Equal(t, kind, reflect.Slice, "failed to result in reflect.Kind of reflect.Slice")
 }
 
 func TestPointerCollectionDereference(t *testing.T) {
 	var (
-		tstructs   = []*TStruct{}
-		_, kind, _ = tranq.Dereference(tstructs)
+		tstructs      = []*TStruct{}
+		_, kind, _, _ = tranq.Dereference(tstructs)
 	)
 
 	assert.Equal(t, kind, reflect.Slice, "failed to result in reflect.Kind of reflect.Slice")
@@ -113,8 +113,8 @@ func TestPointerCollectionDereference(t *testing.T) {
 
 func TestComplexPointerCollectionDereference(t *testing.T) {
 	var (
-		tstructs   = []*TStruct{}
-		_, kind, _ = tranq.Dereference(&tstructs)
+		tstructs      = []*TStruct{}
+		_, kind, _, _ = tranq.Dereference(&tstructs)
 	)
 
 	assert.Equal(t, kind, reflect.Slice, "failed to result in reflect.Kind of reflect.Slice")
