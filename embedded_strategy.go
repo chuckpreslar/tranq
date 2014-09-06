@@ -11,6 +11,7 @@ type EmbeddedStrategy struct {
 	TopLevelNamespace      string
 	AttributeNameFormatter NamingFormatter
 	TypeNameFormatter      NamingFormatter
+	URLFormatter           URLFormatter
 
 	root Payload
 }

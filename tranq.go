@@ -130,6 +130,7 @@ func shouldDescend(kind reflect.Kind, currentDepth, maxDepth int) bool {
 
 type compiler struct {
 	*Tranq
+	typeName string
 }
 
 func (cr compiler) compile(i interface{}, c, m int) (interface{}, error) {
@@ -251,7 +252,7 @@ func (tq *Tranq) CompilePayload(i interface{}) (Payload, error) {
 		p = make(Payload)
 		m = tq.strategy.GetMaxMapDepth()
 		n = tq.strategy.GetTopLevelNamespace(t)
-		c = compiler{tq}
+		c = compiler{tq, t}
 	)
 
 	tq.strategy.SetPayloadRoot(p)
