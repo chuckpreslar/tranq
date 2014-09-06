@@ -170,22 +170,9 @@ func (cr compiler) compileStruct(v reflect.Value, t reflect.Type, c, m int) (int
 		} else if !fv.CanInterface() {
 			return nil, UninterfaceabledValueError{fv}
 		} else if cr.strategy.ShouldLinkStructField(fs) {
-			var result, err = cr.compile(fv.Interface(), 0, cr.strategy.GetMaxLinkDepth())
-
-			if nil != err {
+			if err := cr.linkStructField(payload, fv, ft, fk, fs); nil != err {
 				return nil, err
 			}
-
-			var linker = Link{
-				Interface:   result,
-				Value:       fv,
-				Type:        ft,
-				Kind:        fk,
-				StructField: fs,
-				IDFormat:    cr.id,
-			}
-
-			cr.strategy.LinkStructField(payload, linker)
 		} else if shouldDescend(fk, c, m) {
 			var (
 				n           = cr.strategy.FormatAttributeName(fs.Name)
@@ -201,6 +188,25 @@ func (cr compiler) compileStruct(v reflect.Value, t reflect.Type, c, m int) (int
 	}
 
 	return payload, nil
+}
+
+func (cr compiler) linkStructField(p Payload, v reflect.Value, t reflect.Type, k reflect.Kind, f reflect.StructField) error {
+	var result, err = cr.compile(v.Interface(), 0, cr.strategy.GetMaxLinkDepth())
+
+	if nil != err {
+		return err
+	}
+
+	var l = Link{
+		Interface:   result,
+		Value:       v,
+		Type:        t,
+		Kind:        k,
+		StructField: f,
+		IDFormat:    cr.id,
+	}
+
+	return cr.strategy.LinkStructField(p, l)
 }
 
 func (cr compiler) compileCollection(v reflect.Value, c, m int) (interface{}, error) {
