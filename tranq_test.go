@@ -235,3 +235,23 @@ func TestBasicCollectionTranqCompileCompilePayloadResult(t *testing.T) {
 	}
 
 }
+
+func TestUninterfaceabledValueErrorDereference(t *testing.T) {
+	type utype struct {
+		ufield int
+	}
+
+	var u = utype{1}
+
+	var _, err = tranq.New(&TStrategy{}).CompilePayload(u)
+
+	assert.NotNil(t, err, "failed to return UninterfaceabledValueError error")
+}
+
+func TestInvalidKindErrorDereference(t *testing.T) {
+	type mtype map[struct{}]struct{}
+
+	var _, err = tranq.TypeName(mtype{})
+
+	assert.NotNil(t, err, "failed to return UninterfaceabledValueError error")
+}
