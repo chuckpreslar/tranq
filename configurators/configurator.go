@@ -4,8 +4,11 @@ import (
 	"github.com/chuckpreslar/tranq/serializers"
 )
 
-// Configurator ...
+// Configurator interface provides the ability to
+// create and customize types implementing the
+// serializers.Serializer interface.
 type Configurator interface {
-	// Accept ...
+	// NewSerializer returns an instance of the
+	// serializers.Serializer interface.
 	NewSerializer() serializers.Serializer
 }

@@ -2,39 +2,51 @@ package configurators
 
 import (
 	"sync"
+)
 
+import (
 	"github.com/chuckpreslar/tranq/serializers"
 )
 
 const (
-	// ID ...
+	// ID represents the JSON API reserved string "id"
 	ID = "id"
-	// IDs ...
+	// IDs represents the JSON API reserved string "ids"
 	IDs = "ids"
-	// Links ...
+	// Links represents the JSON API reserved string "links"
 	Links = "links"
-	// Linked ...
+	// Linked represents the JSON API reserved string "linked"
 	Linked = "linked"
-	// Meta ...
+	// Meta represents the JSON API reserved string "meta"
 	Meta = "meta"
-	// Data ...
+	// Data represents the JSON API reserved string "data"
 	Data = "data"
-	// Href ...
+	// Href represents the JSON API reserved string "href"
 	Href = "href"
-	// Type ...
+	// Type represents the JSON API reserved string "type"
 	Type = "type"
 )
 
 // Base ...
 type Base struct {
-	// TypeNameFormatter ...
+	// TypeNameFormatter is used to format names of
+	// types during serialization. Types include
+	// base language types as well as developer
+	// defined types.
 	TypeNameFormatter serializers.NamingFormatter
-	// AttributeNameFormatter ...
+	// AttributeNameFormatter is used to format names of
+	// attributes during serialization. Attributes
+	// include JSON API reserved words and struct
+	// field names.
 	AttributeNameFormatter serializers.NamingFormatter
-	// HrefFormatter ...
+	// HrefFormatter is used to format the JSON API
+	// `href` attribute value when linked resources
+	// are encountered during serialization.
 	HrefFormatter serializers.HrefFormatter
-	// ReservedWords ...
-	ReservedWords struct {
+	// ReservedStrings is a structure containing
+	// JSON API reserved words formatted with the
+	// AttributeNameFormatter NamingFormatter.
+	ReservedStrings struct {
 		ID     string
 		IDs    string
 		Links  string
@@ -49,24 +61,26 @@ type Base struct {
 	mutex sync.Mutex
 }
 
-// NewSerializer ...
-func (b Base) NewSerializer() serializers.Serializer {
+// NewSerializer implements the Configurator interface
+// returning an instance of the Serializer interface
+// implmented by serializers.Base.
+func (b *Base) NewSerializer() serializers.Serializer {
 	b.mutex.Lock()
 
-	b.ReservedWords.ID = b.FormatAttributeName(ID)
-	b.ReservedWords.IDs = b.FormatAttributeName(IDs)
-	b.ReservedWords.Links = b.FormatAttributeName(Links)
-	b.ReservedWords.Linked = b.FormatAttributeName(Linked)
-	b.ReservedWords.Meta = b.FormatAttributeName(Meta)
-	b.ReservedWords.Data = b.FormatAttributeName(Data)
-	b.ReservedWords.Type = b.FormatAttributeName(Type)
-	b.ReservedWords.Href = b.FormatAttributeName(Href)
+	b.ReservedStrings.ID = b.FormatAttributeName(ID)
+	b.ReservedStrings.IDs = b.FormatAttributeName(IDs)
+	b.ReservedStrings.Links = b.FormatAttributeName(Links)
+	b.ReservedStrings.Linked = b.FormatAttributeName(Linked)
+	b.ReservedStrings.Meta = b.FormatAttributeName(Meta)
+	b.ReservedStrings.Data = b.FormatAttributeName(Data)
+	b.ReservedStrings.Type = b.FormatAttributeName(Type)
+	b.ReservedStrings.Href = b.FormatAttributeName(Href)
 
 	var serializer = &serializers.Base{
 		TypeNameFormatter:      b.TypeNameFormatter,
 		AttributeNameFormatter: b.AttributeNameFormatter,
 		HrefFormatter:          b.HrefFormatter,
-		ReservedWords:          b.ReservedWords,
+		ReservedStrings:        b.ReservedStrings,
 	}
 
 	b.mutex.Unlock()
@@ -74,7 +88,10 @@ func (b Base) NewSerializer() serializers.Serializer {
 	return serializer
 }
 
-// FormatAttributeName ...
+// FormatAttributeName allows access to Base's
+// AttributeNameFormatter NameFormatter. If no
+// AttributeNameFormatter was provided, the original
+// string is returned in place of a formatted one.
 func (b *Base) FormatAttributeName(s string) string {
 	if nil == b.AttributeNameFormatter {
 		return s
@@ -83,7 +100,10 @@ func (b *Base) FormatAttributeName(s string) string {
 	return b.AttributeNameFormatter.FormatName(s)
 }
 
-// FormatTypeName ...
+// FormatTypeName allows access to Base's
+// TypeNameFormatter NameFormatter. If no
+// TypeNameFormatter was provided, the original
+// string is returned in place of a formatted one.
 func (b *Base) FormatTypeName(s string) string {
 	if nil == b.TypeNameFormatter {
 		return s
