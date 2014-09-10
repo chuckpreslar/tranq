@@ -135,7 +135,16 @@ type Base struct {
 	// RootContext ...
 	RootContext map[string]interface{}
 	// ReservedWords ...
-	ReservedWords map[string]string
+	ReservedWords struct {
+		ID     string
+		IDs    string
+		Links  string
+		Linked string
+		Meta   string
+		Data   string
+		Type   string
+		Href   string
+	}
 }
 
 // Accept ...
@@ -441,9 +450,9 @@ func (b *Base) LinkStructField(m map[string]interface{}, p, v reflect.Value, t r
 		ok    bool
 	)
 
-	if links, ok = m[b.ReservedWords["links"]].(map[string]interface{}); !ok {
+	if links, ok = m[b.ReservedWords.Links].(map[string]interface{}); !ok {
 		links = make(map[string]interface{})
-		m[b.ReservedWords["links"]] = links
+		m[b.ReservedWords.Links] = links
 	}
 
 	var (
@@ -500,11 +509,11 @@ func (b *Base) LinkStructField(m map[string]interface{}, p, v reflect.Value, t r
 		}
 
 		parent = b.FormatTypeName(parent)
-		details[b.ReservedWords["href"]] = b.FormatHref(href, parent, typ, ids)
+		details[b.ReservedWords.Href] = b.FormatHref(href, parent, typ, ids)
 	}
 
-	details[b.ReservedWords["type"]] = typ
-	details[b.ReservedWords["ids"]] = ids
+	details[b.ReservedWords.Type] = typ
+	details[b.ReservedWords.IDs] = ids
 
 	links[attr] = details
 

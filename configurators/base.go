@@ -1,26 +1,28 @@
 package configurators
 
 import (
+	"sync"
+
 	"github.com/chuckpreslar/tranq/serializers"
 )
 
 const (
-	// JSONID ...
-	JSONID = "id"
-	// JSONIDs ...
-	JSONIDs = "ids"
-	// JSONLinks ...
-	JSONLinks = "links"
-	// JSONLinked ...
-	JSONLinked = "linked"
-	// JSONMeta ...
-	JSONMeta = "meta"
-	// JSONData ...
-	JSONData = "data"
-	// JSONHref ...
-	JSONHref = "href"
-	// JSONType ...
-	JSONType = "type"
+	// ID ...
+	ID = "id"
+	// IDs ...
+	IDs = "ids"
+	// Links ...
+	Links = "links"
+	// Linked ...
+	Linked = "linked"
+	// Meta ...
+	Meta = "meta"
+	// Data ...
+	Data = "data"
+	// Href ...
+	Href = "href"
+	// Type ...
+	Type = "type"
 )
 
 // Base ...
@@ -31,31 +33,45 @@ type Base struct {
 	AttributeNameFormatter serializers.NamingFormatter
 	// HrefFormatter ...
 	HrefFormatter serializers.HrefFormatter
-	// reservedWords
-	reservedWords map[string]string
+	// ReservedWords ...
+	ReservedWords struct {
+		ID     string
+		IDs    string
+		Links  string
+		Linked string
+		Meta   string
+		Data   string
+		Type   string
+		Href   string
+	}
+	// mutex prevents mutation of exposed fields
+	// used to create instances of `serlizers.Serializer`
+	mutex sync.Mutex
 }
 
 // NewSerializer ...
 func (b Base) NewSerializer() serializers.Serializer {
-	if nil == b.reservedWords {
-		b.reservedWords = make(map[string]string)
+	b.mutex.Lock()
 
-		b.reservedWords[JSONID] = b.FormatAttributeName(JSONID)
-		b.reservedWords[JSONIDs] = b.FormatAttributeName(JSONIDs)
-		b.reservedWords[JSONLinks] = b.FormatAttributeName(JSONLinks)
-		b.reservedWords[JSONLinked] = b.FormatAttributeName(JSONLinked)
-		b.reservedWords[JSONMeta] = b.FormatAttributeName(JSONMeta)
-		b.reservedWords[JSONData] = b.FormatAttributeName(JSONData)
-		b.reservedWords[JSONHref] = b.FormatAttributeName(JSONHref)
-		b.reservedWords[JSONType] = b.FormatAttributeName(JSONType)
-	}
+	b.ReservedWords.ID = b.FormatAttributeName(ID)
+	b.ReservedWords.IDs = b.FormatAttributeName(IDs)
+	b.ReservedWords.Links = b.FormatAttributeName(Links)
+	b.ReservedWords.Linked = b.FormatAttributeName(Linked)
+	b.ReservedWords.Meta = b.FormatAttributeName(Meta)
+	b.ReservedWords.Data = b.FormatAttributeName(Data)
+	b.ReservedWords.Type = b.FormatAttributeName(Type)
+	b.ReservedWords.Href = b.FormatAttributeName(Href)
 
-	return &serializers.Base{
+	var serializer = &serializers.Base{
 		TypeNameFormatter:      b.TypeNameFormatter,
 		AttributeNameFormatter: b.AttributeNameFormatter,
 		HrefFormatter:          b.HrefFormatter,
-		ReservedWords:          b.reservedWords,
+		ReservedWords:          b.ReservedWords,
 	}
+
+	b.mutex.Unlock()
+
+	return serializer
 }
 
 // FormatAttributeName ...
