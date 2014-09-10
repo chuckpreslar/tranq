@@ -17,14 +17,14 @@ func (u UninterfaceableValueError) Error() string {
 
 // UnsupportedKindError ...
 type UnsupportedKindError struct {
-	kind       reflect.Kind
-	serializer Serializer
+	Kind       reflect.Kind
+	Serializer Serializer
 }
 
 // Error ..
 func (u UnsupportedKindError) Error() string {
-	var serializer = reflect.TypeOf(u.serializer).Elem().Name()
-	return fmt.Sprintf("the reflect.Kind of `%s` is unsupported by the serializer `%s`", u.kind, serializer)
+	var serializer = reflect.TypeOf(u.Serializer).Elem().Name()
+	return fmt.Sprintf("the reflect.Kind of `%s` is unsupported by the serializer `%s`", u.Kind, serializer)
 }
 
 // UnlinkedResourceError ...
