@@ -15,7 +15,7 @@ standards set by [JSON API](http://jsonapi.org/).
 
 ### Usage
 
-__1__) Define types, creating custom serialization strategies or use those
+__1__) Define types, create custom serialization strategies or use those
 included with the package.
 
 ```go
@@ -34,36 +34,51 @@ type Comment struct {
 type Post struct {
   Id       int
   Body     string
-  Author   Person    `tranq-link:"true" tranq-href:"/api/v1/people"`
-  Comments []Comment `tranq-link:"true" tranq-href:"/api/v1/comments"`
+  Author   Person    `tranq_link:"true" tranq_href:"/api/v1/people"`
+  Comments []Comment `tranq_link:"true" tranq_href:"/api/v1/comments"`
 }
 
 ```
 
-__2__) Create and configure a serializer.
+__2__) Import, create and configure a serializer.
 
 ```go
-strategy := &tranq.EmbeddedStrategy {
-  MaxLinkDepth: 1,
-  MaxMapDepth: 1,
-  TypeNameFormatter: func(s string) string {
-    return inflector.UnderscoreAndPluralize(s)
-  },
-  AttributeNameFormatter: func(s string) string {
-    return inflector.Underscore(s)
-  },
+package main
+
+import (
+  "github.com/chuckpreslar/inflect"
+  "github.com/chuckpreslar/tranq"
+  "github.com/chuckpreslar/tranq/configurators"
+  "github.com/chuckpreslar/tranq/serializers"
+)
+
+func FormatTypeName(s string) string {
+  return inflect.Underscore(inflect.Pluralize(s))
 }
 
-formatter := tranq.New(strategy)
+func FormatAttributeName(s string) string {
+  return inflect.Underscore(s)
+}
+
+func main() {
+  configuration := configurators.Base {
+    TypeNameFormatter: serializers.NamingFormatterFunc(FormatTypeName),
+    AttributeNameFormatter: serializers.NamingFormatterFunc(FormatAttributeName),
+  }
+
+  serializer := tranq.New(configuration)
+}
 ```
 
 __3__) Win.
 
 ```go
-if payload, err := formatter.CompilePayload(post); nil != err {
-  panic(err)
-} else if result, err := payload.Marshal(); nil != err {
-  panic(err)
+// ...
+
+if result, err := serializer.Serialize(posts); nil != err {
+  return err
+} else {
+  return json.Marshal(result)
 }
 
 /**
@@ -76,31 +91,28 @@ if payload, err := formatter.CompilePayload(post); nil != err {
         "links":{  
           "author":{  
             "href":"/v1/people",
-            "id":1,
+            "ids":[1],
             "type":"people"
           },
           "comments":{  
             "href":"/v1/comments",
-            "ids":[  
-              1,
-              2
-            ],
+            "ids":[1, 2],
             "type":"comments"
           }
         }
       },
       {  
         "body":"Lorem Ipsum...",
-        "id":1,
+        "id":2,
         "links":{  
           "author":{  
             "href":"/v1/people",
-            "id":1,
+            "ids":[2],
             "type":"people"
           },
           "comments":{  
             "href":"/v1/comments",
-            "ids":[1, 2],
+            "ids":[3, 4],
             "type":"comments"
           }
         }
