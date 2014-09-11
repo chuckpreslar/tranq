@@ -1,22 +1,47 @@
 tranq
 =====
 
-Easily format and marshal responses for your self describing RESTful/JSON API
+Easily serialize and marshal responses for your self describing RESTful/JSON API
 (based on [JSON API](http://jsonapi.org/)).
 
 [![Build Status](https://drone.io/github.com/chuckpreslar/tranq/status.png)](https://drone.io/github.com/chuckpreslar/tranq/latest)
 
-### Configuration
+### Configuration and Extension
 
-Configuring the `tranq` package is done through the implementation of the
-`tranq.Strategy` interface. This allows custom compilation of Go structs and
-collections (arrays and slices) into specially formatted JSON to meet the
-standards set by [JSON API](http://jsonapi.org/).
+Due to the variety of options for linking resources specified by
+[JSON API](http://jsonapi.org/), the `tranq` package allows for easy adaptation
+and customization to meet the methods used by your applications through
+use of Go's interfaces.
+
+#### Configurators
+
+`Configurators` contained in the `configurators` package serve as a layer of
+abstraction between the `tranq` and the `serializers` packages. Types
+implementing the `Configurator` interface are used to instantiate the `Tranq`
+type and serve as factories for creating instances of the `Serializer`
+interface.
+
+#### Serializers
+
+`Serializers` fulfill the role of accepting both native Go and user defined
+types and serializing them into a Go map of the structure specified
+by [JSON API](http://jsonapi.org/) for representing resources. These maps
+can then be passed to the `encoding/json` package's `Marshal` method for
+JSON encoding.
+
+#### Base
+
+Included in both the `configurators` and `serializers` package are `Base`
+types. With these two starting points, users can easily compose new
+types, overriding specific functionality (i.e. exactly how where a linked
+resource should live, at the root level level or embedded in a document), or
+provided additional functionality all together.
 
 ### Usage
 
 __1__) Define types, create custom serialization strategies or use those
-included with the package.
+included with the package. The `tranq` package makes use of Go struct tags
+to define linked resources to include with the response.
 
 ```go
 type Person struct {
@@ -46,6 +71,11 @@ __2__) Import, create and configure a serializer.
 package main
 
 import (
+  "fmt"
+  "strings"
+)
+
+import (
   "github.com/chuckpreslar/inflect"
   "github.com/chuckpreslar/tranq"
   "github.com/chuckpreslar/tranq/configurators"
@@ -60,12 +90,29 @@ func FormatAttributeName(s string) string {
   return inflect.Underscore(s)
 }
 
-func main() {
-  configuration := configurators.Base {
-    TypeNameFormatter: serializers.NamingFormatterFunc(FormatTypeName),
-    AttributeNameFormatter: serializers.NamingFormatterFunc(FormatAttributeName),
+func FormatHref(href, owner, child string, ids []interface{}) string {
+  var (
+    str = ""
+    il  = len(ids)
+  )
+
+  for i := 0; i < il; i++ {
+    if i != il - 1 {
+      str = fmt.Sprintf("%s%v,", str, ids[i])
+			continue
+		}
+
+    str = fmt.Sprintf("%s%v", str, ids[i])
   }
 
+  return fmt.Sprintf("%s/%s", strings.TrimRight(href, "/"), str)
+}
+
+func main() {
+  configuration := new(configurators.Base)
+  configuration.TypeNameFormatter = serializers.NamingFormatterFunc(FormatTypeName)
+  configuration.AttributeNameFormatter = serializers.NamingFormatterFunc(FormatAttributeName)
+  configuration.HrefFormatter = serializers.HrefFormatterFunc(FormatHref)
   serializer := tranq.New(configuration)
 }
 ```
@@ -90,12 +137,12 @@ if result, err := serializer.Serialize(posts); nil != err {
         "id":1,
         "links":{  
           "author":{  
-            "href":"/v1/people",
-            "ids":[1],
+            "href":"/api/v1/people",
+            "id": 1,
             "type":"people"
           },
           "comments":{  
-            "href":"/v1/comments",
+            "href":"/api/v1/comments/1,2",
             "ids":[1, 2],
             "type":"comments"
           }
@@ -106,12 +153,12 @@ if result, err := serializer.Serialize(posts); nil != err {
         "id":2,
         "links":{  
           "author":{  
-            "href":"/v1/people",
-            "ids":[2],
+            "href":"/api/v1/people/2",
+            "id":2,
             "type":"people"
           },
           "comments":{  
-            "href":"/v1/comments",
+            "href":"/api/v1/comments/3,4",
             "ids":[3, 4],
             "type":"comments"
           }
@@ -132,7 +179,7 @@ View godoc or visit [godoc.org](http://godoc.org/github.com/chuckpreslar/tranq).
 
 > The MIT License (MIT)
 
-> Copyright (c) 2013 Chuck Preslar
+> Copyright (c) 2014 Chuck Preslar
 
 > Permission is hereby granted, free of charge, to any person obtaining a copy
 > of this software and associated documentation files (the "Software"), to deal

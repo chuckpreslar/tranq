@@ -27,7 +27,7 @@ const (
 	Type = "type"
 )
 
-// Base ...
+// Base is a type implmenting the Configurator interface.
 type Base struct {
 	// TypeNameFormatter is used to format names of
 	// types during serialization. Types include
