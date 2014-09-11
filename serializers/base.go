@@ -25,13 +25,13 @@ const (
 // cannot have its `Interface` method called during
 // serialization.
 type UninterfaceableValueError struct {
-	value reflect.Value
+	Value reflect.Value
 }
 
 // Error implements the `error` interface for the
 // UninterfaceableValueError type.
 func (u UninterfaceableValueError) Error() string {
-	return fmt.Sprintf("failed to call `Interface` method for reflect.Value `%s`", u.value)
+	return fmt.Sprintf("failed to call `Interface` method for reflect.Value `%s`", u.Value)
 }
 
 // UnsupportedKindError occurs when a Serializer encounters
@@ -45,8 +45,7 @@ type UnsupportedKindError struct {
 // Error implements the `error` interface for the
 // UnsupportedKindError type.
 func (u UnsupportedKindError) Error() string {
-	var serializer = reflect.TypeOf(u.Serializer).Elem().Name()
-	return fmt.Sprintf("the reflect.Kind of `%s` is unsupported by the serializer `%s`", u.Kind, serializer)
+	return fmt.Sprintf("encountered a value with reflect.Kind of `%s` is unsupported by the serializer `%T`", u.Kind, u.Serializer)
 }
 
 // UnlinkedResourceError occurs when a resource that

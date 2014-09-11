@@ -11,6 +11,60 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
+func TestUninterfaceableValueError(t *testing.T) {
+	var (
+		val = reflect.ValueOf(1)
+		err = serializers.UninterfaceableValueError{val}
+		str = fmt.Sprintf("failed to call `Interface` method for reflect.Value `%s`", val)
+	)
+
+	assert.Equal(t, str, err.Error(), "failed to return correct error message for UninterfaceableValueError")
+}
+
+func TestUnsupportedKindError(t *testing.T) {
+	var (
+		kind       = reflect.Invalid
+		serializer = &serializers.Base{}
+		err        = serializers.UnsupportedKindError{kind, serializer}
+		str        = fmt.Sprintf("encountered a value with reflect.Kind of `%s` is unsupported by the serializer `%T`", kind, serializer)
+	)
+
+	assert.Equal(t, str, err.Error(), "failed to return correct error message for UnsupportedKindError")
+}
+
+func TestUnlinkedResourceError(t *testing.T) {
+	var (
+		val = reflect.ValueOf(1)
+		err = serializers.UnlinkedResourceError{val}
+		str = fmt.Sprintf("value `%s` contains a nested reflect.Struct, reflect.Slice or reflect.Array which is unlinked, this is unsupported", val)
+	)
+
+	assert.Equal(t, str, err.Error(), "failed to return correct error message for UnlinkedResourceError")
+}
+
+func TestMissingIdentifierError(t *testing.T) {
+	var (
+		val = reflect.ValueOf(1)
+		err = serializers.MissingIdentifierError{val}
+		str = fmt.Sprintf("value `%s` is missing identifier field `%s`", val, serializers.ID)
+	)
+
+	assert.Equal(t, str, err.Error(), "failed to return correct error message for MissingIdentifierError")
+}
+
+func TestHrefFormatterFuncImplementation(t *testing.T) {
+	var f = serializers.HrefFormatterFunc(func(h, o, c string, i []interface{}) string { return "" })
+	assert.Implements(t, (*serializers.HrefFormatter)(nil), f, "HrefFormatterFunc failed to implment HrefFormatter interface")
+}
+
+func TestNamingFormatterFuncImplementation(t *testing.T) {
+	var f = serializers.NamingFormatterFunc(func(s string) string { return "" })
+	assert.Implements(t, (*serializers.NamingFormatter)(nil), f, "NamingFormatterFunc failed to implment NamingFormatter interface")
+}
+
+func TestNamingFormatterFunc(t *testing.T) {
+}
+
 func TestDereference(t *testing.T) {
 	var (
 		a = 1
