@@ -413,6 +413,7 @@ func TestLinkStructFieldSingleResource(t *testing.T) {
 
 	serializer.ReservedStrings.Links = "links"
 	serializer.ReservedStrings.IDs = "ids"
+	serializer.ReservedStrings.ID = "id"
 	serializer.ReservedStrings.Href = "href"
 	serializer.ReservedStrings.Type = "type"
 
@@ -438,12 +439,12 @@ func TestLinkStructFieldSingleResource(t *testing.T) {
 	assert.NotNil(t, mauthor, "failed to establish links %T", author)
 
 	var (
-		mids  = mauthor["ids"]
+		mid   = mauthor["id"]
 		mtype = mauthor["type"]
 		mhref = mauthor["href"]
 	)
 
-	assert.NotNil(t, mids, "failed to establish ids %T", author)
+	assert.NotNil(t, mid, "failed to establish ids %T", author)
 	assert.NotNil(t, mtype, "failed to establish type %T", author)
 	assert.NotNil(t, mhref, "failed to establish href %T", author)
 

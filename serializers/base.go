@@ -567,7 +567,9 @@ func (b *Base) LinkStructField(m map[string]interface{}, p, v reflect.Value, t r
 		}
 
 		ids = append(ids, id.Interface())
+		details[b.ReservedStrings.ID] = id.Interface()
 	} else if k == reflect.Slice || k == reflect.Array {
+
 		for i := 0; i < v.Len(); i++ {
 			var temp = v.Index(i)
 
@@ -589,6 +591,8 @@ func (b *Base) LinkStructField(m map[string]interface{}, p, v reflect.Value, t r
 
 			ids = append(ids, id.Interface())
 		}
+
+		details[b.ReservedStrings.IDs] = ids
 	}
 
 	if 0 < len(href) {
@@ -603,7 +607,6 @@ func (b *Base) LinkStructField(m map[string]interface{}, p, v reflect.Value, t r
 	}
 
 	details[b.ReservedStrings.Type] = typ
-	details[b.ReservedStrings.IDs] = ids
 
 	links[attr] = details
 
