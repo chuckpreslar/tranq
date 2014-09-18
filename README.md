@@ -53,7 +53,7 @@ type Person struct {
 type Comment struct {
   Id     int
   Body   string
-  Author Person
+  Author Person `tranq_link:"true" tranq_href:"/api/v1/people"`
 }
 
 type Post struct {
@@ -131,40 +131,64 @@ if result, err := serializer.Serialize(posts); nil != err {
 /**
   result =>
   {  
-    "posts":[  
-      {  
-        "body":"Lorem Ipsum...",
-        "id":1,
-        "links":{  
-          "author":{  
-            "href":"/api/v1/people",
-            "id": 1,
-            "type":"people"
-          },
-          "comments":{  
-            "href":"/api/v1/comments/1,2",
-            "ids":[1, 2],
-            "type":"comments"
-          }
-        }
-      },
-      {  
-        "body":"Lorem Ipsum...",
-        "id":2,
-        "links":{  
-          "author":{  
-            "href":"/api/v1/people/2",
-            "id":2,
-            "type":"people"
-          },
-          "comments":{  
-            "href":"/api/v1/comments/3,4",
-            "ids":[3, 4],
-            "type":"comments"
-          }
+    "posts":{  
+      "id":1,
+      "body":"Neque porro quisquam est qui dolorem..",
+      "title":"Lorem Ipsum...",
+      "links":{  
+        "author":{  
+          "href":"/api/v1/people/1",
+          "id":1,
+          "type":"people"
+        },
+        "comments":{  
+          "href":"/api/v1/comments/1,2",
+          "ids":[  
+            1,
+            2
+          ],
+          "type":"comments"
         }
       }
-    ]
+    },
+    "linked":{  
+      "comments":[  
+        {
+          "id":1,
+          "body":"Lorem Ipsum...",
+          "links":{  
+            "author":{  
+              "href":"/api/v1/people/2",
+              "id":2,
+              "type":"people"
+            }
+          }
+        },
+        {  
+          "id":2,
+          "body":"Lorem Ipsum...",
+          "links":{  
+            "author":{  
+              "href":"/api/v1/people/1",
+              "id":1,
+              "type":"people"
+            }
+          }
+        }
+      ],
+      "people":[  
+        {
+          "id":1,
+          "first_name":"Jon",
+          "last_name":"Doe"
+        },
+        {  
+          "id":2,
+          "first_name":"Jane",
+          "last_name":"Doe"
+        }
+      ]
+    }
   }
 */
 ```
