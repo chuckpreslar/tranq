@@ -1,8 +1,6 @@
 package configurators
 
-import (
-	"sync"
-)
+import "sync"
 
 import (
 	"github.com/chuckpreslar/tranq/serializers"
@@ -81,6 +79,7 @@ func (b *Base) NewSerializer() serializers.Serializer {
 		AttributeNameFormatter: b.AttributeNameFormatter,
 		HrefFormatter:          b.HrefFormatter,
 		ReservedStrings:        b.ReservedStrings,
+		LinkedDocuments:        make(map[interface{}]struct{}),
 	}
 
 	b.mutex.Unlock()

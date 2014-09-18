@@ -19,6 +19,8 @@ const (
 	// contains the unformatted JSON API href
 	// attribute.
 	TranqHref = "tranq_href"
+	// TranqIgnore ...
+	TranqIgnore = "tranq_ignore"
 )
 
 // UninterfaceableValueError occurs when a reflect.Value
@@ -190,6 +192,8 @@ type Base struct {
 	// created to contain the serialized JSON API
 	// response.
 	RootContext map[string]interface{}
+	// LinkedDocuments ...
+	LinkedDocuments map[interface{}]struct{}
 	// ReservedStrings is a structure containing
 	// JSON API reserved words formatted with the
 	// AttributeNameFormatter NamingFormatter.
@@ -530,6 +534,79 @@ func (b *Base) SerializeUnsafePointer(v reflect.Value) (interface{}, error) {
 	return nil, UnsupportedKindError{v.Kind(), b}
 }
 
+// IsZeroValue ...
+func (b *Base) IsZeroValue(k reflect.Kind, i interface{}) bool {
+	switch k {
+
+	}
+	return false
+}
+
+// IsCompoundDocument ...
+func (b *Base) IsCompoundDocument(v reflect.Value) bool {
+	var (
+		fields = make([]int, 0, 0)
+		t      = v.Type()
+	)
+
+	for i := 0; i < v.NumField(); i++ {
+		var (
+			value = v.Field(i)
+			field = t.Field(i)
+			kind  = value.Kind()
+		)
+
+		if !value.CanInterface() {
+			continue
+		} else if "true" == field.Tag.Get(TranqIgnore) {
+			continue
+		} else if b.IsZeroValue(kind, value.Interface()) {
+			continue
+		}
+
+		fields = append(fields, i)
+	}
+
+	return 1 < len(fields)
+}
+
+// LinkCompoundDocument ...
+func (b *Base) LinkCompoundDocument(v reflect.Value, n string) error {
+	var (
+		linked map[string]interface{}
+		result interface{}
+		err    error
+		ok     bool
+	)
+
+	if _, ok = b.LinkedDocuments[v.Interface()]; !ok {
+		b.LinkedDocuments[v.Interface()] = struct{}{}
+	} else {
+		return nil
+	}
+
+	if linked, ok = b.RootContext[b.ReservedStrings.Linked].(map[string]interface{}); !ok {
+		linked = make(map[string]interface{})
+		b.RootContext[b.ReservedStrings.Linked] = linked
+	}
+
+	if _, ok = linked[n].([]interface{}); !ok {
+		linked[n] = make([]interface{}, 0, 0)
+	}
+
+	if result, err = b.Serialize(v.Interface()); nil != err {
+		return err
+	}
+
+	if _, ok = result.([]interface{}); ok {
+		linked[n] = append(linked[n].([]interface{}), result.([]interface{})...)
+	} else {
+		linked[n] = append(linked[n].([]interface{}), result)
+	}
+
+	return nil
+}
+
 // LinkStructField attempts to add link details for a value
 // to a map[string]interface{} under the JSON API reserved
 // string `links`. If LinkStructField an error detailing
@@ -568,11 +645,16 @@ func (b *Base) LinkStructField(m map[string]interface{}, p, v reflect.Value, t r
 
 		ids = append(ids, id.Interface())
 		details[b.ReservedStrings.ID] = id.Interface()
-	} else if k == reflect.Slice || k == reflect.Array {
 
+		if b.IsCompoundDocument(v) {
+			if err = b.LinkCompoundDocument(v, typ); nil != err {
+				return err
+			}
+		}
+
+	} else if k == reflect.Slice || k == reflect.Array {
 		for i := 0; i < v.Len(); i++ {
 			var temp = v.Index(i)
-
 			if !temp.CanInterface() {
 				return UninterfaceableValueError{temp}
 			}
@@ -590,6 +672,12 @@ func (b *Base) LinkStructField(m map[string]interface{}, p, v reflect.Value, t r
 			}
 
 			ids = append(ids, id.Interface())
+
+			if b.IsCompoundDocument(element) {
+				if err = b.LinkCompoundDocument(element, typ); nil != err {
+					return err
+				}
+			}
 		}
 
 		details[b.ReservedStrings.IDs] = ids
